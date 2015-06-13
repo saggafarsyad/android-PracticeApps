@@ -126,7 +126,14 @@ public class MainFragment extends Fragment {
                     });
                 } else {
                     // Show no artist found
-                    Toast.makeText(getActivity(), R.string.artist_not_found, Toast.LENGTH_SHORT).show();
+                    mainHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            // Set adapter
+                            Toast.makeText(getActivity(), R.string.artist_not_found, Toast.LENGTH_SHORT).show();
+
+                        }
+                    });
                 }
             }
 

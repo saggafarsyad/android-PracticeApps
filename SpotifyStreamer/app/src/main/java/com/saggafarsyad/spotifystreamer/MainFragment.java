@@ -1,5 +1,6 @@
 package com.saggafarsyad.spotifystreamer;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
@@ -8,6 +9,7 @@ import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -16,6 +18,7 @@ import com.saggafarsyad.spotifystreamer.adapter.ArtistListAdapter;
 
 import kaaes.spotify.webapi.android.SpotifyApi;
 import kaaes.spotify.webapi.android.SpotifyService;
+import kaaes.spotify.webapi.android.models.Artist;
 import kaaes.spotify.webapi.android.models.ArtistsPager;
 import retrofit.Callback;
 import retrofit.RetrofitError;
@@ -79,6 +82,25 @@ public class MainFragment extends Fragment {
             }
         });
 
+        // Set on item click listener
+        artistListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                // Get Artist
+                Artist artist = (Artist) artistListView.getAdapter().getItem(position);
+
+                // Build intent
+                Intent intent = new Intent(getActivity(), TrackActivity.class);
+
+                // Put Spotify Artist ID and Name
+                intent.putExtra(TrackFragment.EXTRA_ARTIST_ID, artist.id);
+                intent.putExtra(TrackFragment.EXTRA_ARTIST_NAME, artist.name);
+
+                // Start Activity
+                startActivity(intent);
+            }
+        });
+
         return rootView;
     }
 
@@ -92,7 +114,7 @@ public class MainFragment extends Fragment {
             @Override
             public void success(ArtistsPager artistsPager, Response response) {
                 if (!artistsPager.artists.items.isEmpty()) {
-                    // Build adaptar
+                    // Build adapter
                     final ArtistListAdapter adapter = new ArtistListAdapter(artistsPager.artists.items, getActivity());
 
                     mainHandler.post(new Runnable() {

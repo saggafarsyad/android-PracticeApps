@@ -11,7 +11,7 @@ import android.widget.TextView;
 import com.saggafarsyad.spotifystreamer.R;
 import com.squareup.picasso.Picasso;
 
-import java.util.ArrayList;
+import java.util.List;
 
 import kaaes.spotify.webapi.android.models.Image;
 import kaaes.spotify.webapi.android.models.Track;
@@ -29,7 +29,7 @@ public class TrackListAdapter extends BaseAdapter {
         this.mContext = context;
     }
 
-    public TrackListAdapter(ArrayList<Track> dataSet, Context context) {
+    public TrackListAdapter(List<Track> dataSet, Context context) {
         this.mDataSet = dataSet.toArray(new Track[dataSet.size()]);
         this.mContext = context;
     }

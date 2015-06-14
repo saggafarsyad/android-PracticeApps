@@ -83,7 +83,7 @@ public class ArtistListAdapter extends BaseAdapter {
         }
 
         if (image != null) {
-            // Show thumbnail if there is 64px images
+            // Show thumbnailUrl if there is 64px images
             Picasso.with(mContext).load(image.url).into(holder.thumbnailImageView);
         } else {
             if (!artist.images.isEmpty()) {

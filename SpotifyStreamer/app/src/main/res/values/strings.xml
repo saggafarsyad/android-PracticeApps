@@ -3,6 +3,6 @@
     <string name="action_settings">Settings</string>
     <string name="title_activity_track">Top 10 Tracks</string>
     <string name="error_connection">Connection Failure</string>
-    <string name="artist_not_found">Artist not found</string>
+    <string name="artist_not_found">Artist not found. Please refine your search!    </string>
     <string name="track_not_found">Tracks not found</string>
 </resources>

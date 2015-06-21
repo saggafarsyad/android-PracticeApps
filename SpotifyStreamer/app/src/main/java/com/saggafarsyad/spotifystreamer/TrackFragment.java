@@ -1,5 +1,6 @@
 package com.saggafarsyad.spotifystreamer;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
@@ -7,6 +8,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -16,6 +18,7 @@ import java.util.HashMap;
 
 import kaaes.spotify.webapi.android.SpotifyApi;
 import kaaes.spotify.webapi.android.SpotifyService;
+import kaaes.spotify.webapi.android.models.Track;
 import kaaes.spotify.webapi.android.models.Tracks;
 import retrofit.Callback;
 import retrofit.RetrofitError;
@@ -57,6 +60,22 @@ public class TrackFragment extends Fragment {
         fetchTopTracks();
 
         // @todo: Set On Item Click Listener
+        trackListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                // Check if adapter exist
+                if (parent.getAdapter() != null) {
+                    // Get Track
+                    Track track = (Track) parent.getAdapter().getItem(position);
+
+                    // Build Intent
+                    Intent intent = new Intent(getActivity(), PlayerActivity.class);
+                    intent.putExtra(getString(R.string.intent_extra_track_id), track.id);
+
+                    startActivity(intent);
+                }
+            }
+        });
 
         return rootView;
     }

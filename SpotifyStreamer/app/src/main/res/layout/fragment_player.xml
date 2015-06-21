@@ -88,7 +88,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
-            android:contentDescription="@string/content_prev_track_button" />
+            android:contentDescription="@string/content_prev_track_button"
+            android:src="@drawable/ic_av_skip_previous" />
 
         <ImageButton
             android:id="@+id/play_pause"
@@ -96,13 +97,15 @@
             android:layout_height="wrap_content"
             android:layout_marginLeft="16dp"
             android:layout_marginRight="16dp"
-            android:contentDescription="@string/content_play_pause_track_button" />
+            android:contentDescription="@string/content_play_pause_track_button"
+            android:src="@drawable/ic_av_play_arrow" />
 
         <ImageButton
             android:id="@+id/next"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:contentDescription="content_next_track_button" />
+            android:contentDescription="content_next_track_button"
+            android:src="@drawable/ic_av_skip_next" />
     </LinearLayout>
 
 </LinearLayout>

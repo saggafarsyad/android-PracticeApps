@@ -5,4 +5,9 @@
     <string name="error_connection">Connection Failure</string>
     <string name="artist_not_found">Artist not found. Please refine your search!    </string>
     <string name="track_not_found">Tracks not found</string>
+    <string name="title_activity_player">PlayerActivity</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="content_album_artwork">Album Artwork</string>
+    <string name="content_prev_track_button">Previous Track</string>
+    <string name="content_play_pause_track_button">Play/Pause Button</string>
 </resources>

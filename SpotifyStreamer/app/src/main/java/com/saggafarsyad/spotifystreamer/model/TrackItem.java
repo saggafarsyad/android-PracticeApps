@@ -3,6 +3,8 @@ package com.saggafarsyad.spotifystreamer.model;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import kaaes.spotify.webapi.android.models.Track;
+
 /**
  * Created by Muhammad on 25/06/2015.
  */
@@ -22,6 +24,13 @@ public class TrackItem implements Parcelable {
     public String albumName;
 
     public TrackItem() {
+    }
+
+    public TrackItem(Track track) {
+        this.spotifyId = track.id;
+        this.name = track.name;
+        this.albumArtworkUrl = track.album.images.get(0).url;
+        this.albumName = track.album.name;
     }
 
     protected TrackItem(Parcel in) {

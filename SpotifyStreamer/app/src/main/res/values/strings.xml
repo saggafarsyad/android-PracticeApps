@@ -10,5 +10,9 @@
     <string name="content_album_artwork">Album Artwork</string>
     <string name="content_prev_track_button">Previous Track</string>
     <string name="content_play_pause_track_button">Play/Pause Button</string>
-    <string name="intent_extra_track_id">extra_track_id</string>
+    <!-- Intent Extra-->
+    <string name="intent_extra_current_track_position">current_track</string>
+    <string name="intent_extra_track_id_list">track_id_list</string>
+    <string name="duration_start">0:00</string>
+    <string name="duration_end">0:30</string>
 </resources>

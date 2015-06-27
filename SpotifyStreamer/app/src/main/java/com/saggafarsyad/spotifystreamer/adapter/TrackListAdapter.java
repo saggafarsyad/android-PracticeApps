@@ -9,29 +9,49 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.saggafarsyad.spotifystreamer.R;
+import com.saggafarsyad.spotifystreamer.model.TrackItem;
 import com.squareup.picasso.Picasso;
 
 import java.util.List;
 
-import kaaes.spotify.webapi.android.models.Image;
 import kaaes.spotify.webapi.android.models.Track;
 
 /**
  * Created by Muhammad on 13/06/2015.
  */
 public class TrackListAdapter extends BaseAdapter {
-
-    private Track mDataSet[];
+    private TrackItem mDataSet[];
     private Context mContext;
 
-    public TrackListAdapter(Track[] dataSet, Context context) {
-        this.mDataSet = dataSet;
+    public TrackListAdapter(TrackItem[] mDataSet, Context mContext) {
+        this.mDataSet = mDataSet;
+        this.mContext = mContext;
+    }
+
+    public TrackListAdapter(List<Track> input, Context context) {
+        // Convert Track to TrackItem
+        // Get size
+        int size = input.size();
+
+        TrackItem trackDataset[] = new TrackItem[size];
+
+        for (int i = 0; i < size; i++) {
+            Track track = input.get(i);
+
+            // Add track to dataset
+            trackDataset[i] = new TrackItem(
+                    track.id,
+                    track.name,
+                    track.album.name,
+                    track.album.images.get(0).url
+            );
+        }
+        this.mDataSet = trackDataset;
         this.mContext = context;
     }
 
-    public TrackListAdapter(List<Track> dataSet, Context context) {
-        this.mDataSet = dataSet.toArray(new Track[dataSet.size()]);
-        this.mContext = context;
+    public TrackItem[] getDataSet() {
+        return mDataSet;
     }
 
     @Override
@@ -71,35 +91,15 @@ public class TrackListAdapter extends BaseAdapter {
             holder = (ViewHolder) convertView.getTag();
         }
 
-        // Get Artist item
-        Track track = mDataSet[position];
-        // Get thumbnail
-        Image image = null;
-        for (Image tmp : track.album.images) {
-            if (tmp.width == 200) {
-                image = tmp;
-                break;
-            }
-        }
+        TrackItem item = mDataSet[position];
 
-        // Show thumbnail
-        if (image != null) {
-            // Show thumbnail if there is 64px images
-            Picasso.with(mContext).load(image.url).into(holder.thumbnailImageView);
-        } else {
-            if (!track.album.images.isEmpty()) {
-                // Show largest image
-                Picasso.with(mContext).load(track.album.images.get(0).url).into(holder.thumbnailImageView);
-            } else {
-                // Show N/A image
-            }
-        }
+        Picasso.with(mContext).load(item.albumArtworkUrl).into(holder.thumbnailImageView);
 
         // Show Track Name
-        holder.trackNameTextView.setText(track.name);
+        holder.trackNameTextView.setText(item.name);
 
         // Show Album Name
-        holder.albumkNameTextView.setText(track.album.name);
+        holder.albumkNameTextView.setText(item.albumName);
 
         return convertView;
     }

@@ -13,12 +13,12 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import com.saggafarsyad.spotifystreamer.adapter.TrackListAdapter;
+import com.saggafarsyad.spotifystreamer.model.TrackItem;
 
 import java.util.HashMap;
 
 import kaaes.spotify.webapi.android.SpotifyApi;
 import kaaes.spotify.webapi.android.SpotifyService;
-import kaaes.spotify.webapi.android.models.Track;
 import kaaes.spotify.webapi.android.models.Tracks;
 import retrofit.Callback;
 import retrofit.RetrofitError;
@@ -33,6 +33,7 @@ public class TrackFragment extends Fragment {
     public static final String EXTRA_ARTIST_ID = "artist_id";
     public static final String EXTRA_ARTIST_NAME = "artist_name";
 
+    private final String ARGS_TRACK_LIST = "track_list";
     // Views
     private ListView trackListView;
 
@@ -57,7 +58,16 @@ public class TrackFragment extends Fragment {
         trackListView = (ListView) rootView.findViewById(R.id.list_track);
 
         // Get Top 10 Tracks
-        fetchTopTracks();
+        if (savedInstanceState != null) {
+            TrackItem[] dataSet = (TrackItem[]) savedInstanceState.getParcelableArray(ARGS_TRACK_LIST);
+            trackListView.setAdapter(new TrackListAdapter(dataSet, getActivity()));
+        } else {
+            // Get artist Id
+            if (getActivity().getIntent() != null) {
+                String artistID = getActivity().getIntent().getStringExtra(EXTRA_ARTIST_ID);
+                fetchTopTracks(artistID);
+            }
+        }
 
         // @todo: Set On Item Click Listener
         trackListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -65,13 +75,21 @@ public class TrackFragment extends Fragment {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 // Check if adapter exist
                 if (parent.getAdapter() != null) {
-                    // Get Track
-                    Track track = (Track) parent.getAdapter().getItem(position);
+                    // Get all track id
+                    int trackCount = parent.getAdapter().getCount();
+                    String trackIds[] = new String[trackCount];
+
+                    for (int i = 0; i < trackCount; i++) {
+                        trackIds[i] = ((TrackItem) parent.getAdapter().getItem(i)).spotifyId;
+                    }
 
                     // Build Intent
                     Intent intent = new Intent(getActivity(), PlayerActivity.class);
-                    intent.putExtra(getString(R.string.intent_extra_track_id), track.id);
-
+                    // Put current track position
+                    intent.putExtra(getString(R.string.intent_extra_current_track_position), position);
+                    // Put track id list
+                    intent.putExtra(getString(R.string.intent_extra_track_id_list), trackIds);
+                    // Start Activity
                     startActivity(intent);
                 }
             }
@@ -80,10 +98,16 @@ public class TrackFragment extends Fragment {
         return rootView;
     }
 
-    private void fetchTopTracks() {
-        // Get artist Id
-        String artistID = getActivity().getIntent().getStringExtra(EXTRA_ARTIST_ID);
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
 
+        // Get items
+        TrackItem[] dataSet = ((TrackListAdapter) trackListView.getAdapter()).getDataSet();
+        outState.putParcelableArray(ARGS_TRACK_LIST, dataSet);
+    }
+
+    private void fetchTopTracks(String artistID) {
         // Init Spotify wrapper
         SpotifyApi api = new SpotifyApi();
         SpotifyService service = api.getService();

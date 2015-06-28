@@ -9,29 +9,45 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.saggafarsyad.spotifystreamer.R;
+import com.saggafarsyad.spotifystreamer.model.ArtistItem;
 import com.squareup.picasso.Picasso;
 
 import java.util.List;
 
 import kaaes.spotify.webapi.android.models.Artist;
-import kaaes.spotify.webapi.android.models.Image;
 
 /**
  * Created by Muhammad on 13/06/2015.
  */
 public class ArtistListAdapter extends BaseAdapter {
 
-    private Artist mDataSet[];
+//    private Artist mDataSet[];
+
+    private ArtistItem mDataSet[];
     private Context mContext;
 
-    public ArtistListAdapter(Artist[] dataSet, Context context) {
+    public ArtistListAdapter(ArtistItem[] dataSet, Context context) {
         this.mDataSet = dataSet;
         this.mContext = context;
     }
 
     public ArtistListAdapter(List<Artist> dataSet, Context context) {
-        this.mDataSet = dataSet.toArray(new Artist[dataSet.size()]);
         this.mContext = context;
+
+        updateDataSet(dataSet);
+    }
+
+    public void updateDataSet(List<Artist> dataSet) {
+        this.mDataSet = new ArtistItem[dataSet.size()];
+
+        // Convert Artist to ArtistItem
+        for (int i = 0; i < dataSet.size(); i++) {
+            this.mDataSet[i] = new ArtistItem(dataSet.get(i));
+        }
+    }
+
+    public ArtistItem[] getDataSet() {
+        return mDataSet;
     }
 
     @Override
@@ -71,28 +87,10 @@ public class ArtistListAdapter extends BaseAdapter {
         }
 
         // Get Artist item
-        Artist artist = mDataSet[position];
+        ArtistItem artist = mDataSet[position];
 
-        // Get Image with width 64px
-        Image image = null;
-        for (Image tmp : artist.images) {
-            if (tmp.width == 200) {
-                image = tmp;
-                break;
-            }
-        }
-
-        if (image != null) {
-            // Show thumbnailUrl if there is 64px images
-            Picasso.with(mContext).load(image.url).into(holder.thumbnailImageView);
-        } else {
-            if (!artist.images.isEmpty()) {
-                // Show largest image
-                Picasso.with(mContext).load(artist.images.get(0).url).into(holder.thumbnailImageView);
-            } else {
-                // Show N/A image
-            }
-        }
+        // Show thumbnailUrl if there is 64px images
+        Picasso.with(mContext).load(artist.thumbnailUrl).into(holder.thumbnailImageView);
 
         // Show artist name
         holder.artistNameTextView.setText(artist.name);

@@ -2,23 +2,23 @@ package com.saggafarsyad.spotifystreamer;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Handler;
 import android.support.v4.app.Fragment;
-import android.text.Editable;
-import android.text.TextWatcher;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
 import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.saggafarsyad.spotifystreamer.adapter.ArtistListAdapter;
+import com.saggafarsyad.spotifystreamer.model.ArtistItem;
 
 import kaaes.spotify.webapi.android.SpotifyApi;
 import kaaes.spotify.webapi.android.SpotifyService;
-import kaaes.spotify.webapi.android.models.Artist;
 import kaaes.spotify.webapi.android.models.ArtistsPager;
 import retrofit.Callback;
 import retrofit.RetrofitError;
@@ -32,24 +32,14 @@ public class MainFragment extends Fragment {
 
     private static final String LOG_TAG = "MainFragment";
 
-    private Handler mTaskHandler;
-    private EditText inputArtistEditText;
-    private ListView artistListView;
-    private Runnable mSearchArtistTask = new Runnable() {
-        @Override
-        public void run() {
-            // Get input string
-            String searchInput = inputArtistEditText.getText().toString();
+    private final String BUNDLE_ARTIST_LIST = "artists";
+    private final String BUNDLE_LAST_SEARCH = "last_search";
 
-            if (!searchInput.isEmpty()) {
-                // Start Artist Search Task
-                searchArtist(searchInput);
-            }
-        }
-    };
+    private EditText artistSearchInput;
+    private ListView artistListView;
+    private ArtistListAdapter artistAdapter;
 
     public MainFragment() {
-        mTaskHandler = new Handler();
     }
 
     @Override
@@ -57,28 +47,32 @@ public class MainFragment extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate views
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
-        inputArtistEditText = (EditText) rootView.findViewById(R.id.input_artist);
+        artistSearchInput = (EditText) rootView.findViewById(R.id.input_artist);
         artistListView = (ListView) rootView.findViewById(R.id.list_artist);
 
-        // Set text change listener
-        inputArtistEditText.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                // Do Nothing
-            }
+        // If ther is saved isntance
+        if (savedInstanceState != null) {
+            // Load last state
+            ArtistItem[] artistDataSet = (ArtistItem[]) savedInstanceState.getParcelableArray(BUNDLE_ARTIST_LIST);
+            artistAdapter = new ArtistListAdapter(artistDataSet, getActivity());
+            artistListView.setAdapter(artistAdapter);
 
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                // Do Nothing
-            }
+            artistSearchInput.setText(savedInstanceState.getString(BUNDLE_LAST_SEARCH));
+        }
 
+        artistSearchInput.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
-            public void afterTextChanged(Editable s) {
-                // Cancel task
-                mTaskHandler.removeCallbacks(mSearchArtistTask);
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
+                    String searchInput = artistSearchInput.getText().toString();
 
-                // Delay 1.5 seconds and start searching artist
-                mTaskHandler.postDelayed(mSearchArtistTask, 1500);
+                    if (!searchInput.isEmpty()) {
+                        // Start Artist Search Task
+                        searchArtist(searchInput);
+                    }
+                }
+
+                return false;
             }
         });
 
@@ -87,13 +81,13 @@ public class MainFragment extends Fragment {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 // Get Artist
-                Artist artist = (Artist) artistListView.getAdapter().getItem(position);
+                ArtistItem artist = (ArtistItem) artistAdapter.getItem(position);
 
                 // Build intent
                 Intent intent = new Intent(getActivity(), TrackActivity.class);
 
                 // Put Spotify Artist ID and Name
-                intent.putExtra(TrackFragment.EXTRA_ARTIST_ID, artist.id);
+                intent.putExtra(TrackFragment.EXTRA_ARTIST_ID, artist.spotifyId);
                 intent.putExtra(TrackFragment.EXTRA_ARTIST_NAME, artist.name);
 
                 // Start Activity
@@ -104,9 +98,20 @@ public class MainFragment extends Fragment {
         return rootView;
     }
 
-    private void searchArtist(String searchInput) {
-        final Handler mainHandler = new Handler(getActivity().getMainLooper());
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        // Get last search
+        String inputSearch = artistSearchInput.getText().toString();
 
+        if (!inputSearch.isEmpty()) {
+            outState.putParcelableArray(BUNDLE_ARTIST_LIST, artistAdapter.getDataSet());
+            outState.putString(BUNDLE_LAST_SEARCH, inputSearch);
+        }
+
+        super.onSaveInstanceState(outState);
+    }
+
+    private void searchArtist(String searchInput) {
         SpotifyApi api = new SpotifyApi();
         SpotifyService service = api.getService();
 
@@ -115,23 +120,31 @@ public class MainFragment extends Fragment {
             public void success(ArtistsPager artistsPager, Response response) {
                 if (!artistsPager.artists.items.isEmpty()) {
                     // Build adapter
-                    final ArtistListAdapter adapter = new ArtistListAdapter(artistsPager.artists.items, getActivity());
+                    if (artistAdapter == null) {
+                        artistAdapter = new ArtistListAdapter(artistsPager.artists.items, getActivity());
 
-                    mainHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            // Set adapter
-                            artistListView.setAdapter(adapter);
-                        }
-                    });
+                        getActivity().runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                artistListView.setAdapter(artistAdapter);
+                            }
+                        });
+                    } else {
+                        artistAdapter.updateDataSet(artistsPager.artists.items);
+
+                        getActivity().runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                artistAdapter.notifyDataSetChanged();
+                            }
+                        });
+                    }
                 } else {
                     // Show no artist found
-                    mainHandler.post(new Runnable() {
+                    getActivity().runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            // Set adapter
                             Toast.makeText(getActivity(), R.string.artist_not_found, Toast.LENGTH_SHORT).show();
-
                         }
                     });
                 }
@@ -139,7 +152,7 @@ public class MainFragment extends Fragment {
 
             @Override
             public void failure(RetrofitError error) {
-                mainHandler.post(new Runnable() {
+                getActivity().runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
                         Toast.makeText(getActivity(), R.string.error_connection, Toast.LENGTH_SHORT).show();

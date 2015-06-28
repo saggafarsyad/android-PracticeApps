@@ -31,7 +31,10 @@ public class ArtistItem implements Parcelable {
     public ArtistItem(Artist artist) {
         this.spotifyId = artist.id;
         this.name = artist.name;
-        this.thumbnailUrl = artist.images.get(0).url;
+
+        if (artist.images.size() > 0) {
+            this.thumbnailUrl = artist.images.get(0).url;
+        }
     }
 
     public ArtistItem() {

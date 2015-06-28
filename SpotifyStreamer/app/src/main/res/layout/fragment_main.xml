@@ -12,7 +12,9 @@
         android:id="@+id/input_artist"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:inputType="text" />
+        android:imeOptions="actionDone"
+        android:inputType="text"
+        android:singleLine="true" />
 
     <ListView
         android:id="@+id/list_artist"

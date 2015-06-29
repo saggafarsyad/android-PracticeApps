@@ -29,30 +29,42 @@ import retrofit.client.Response;
  * A placeholder fragment containing a simple view.
  */
 public class TrackFragment extends Fragment {
-    // Extra const
-//    public static final String EXTRA_ARTIST_ID = "artist_id";
-//    public static final String EXTRA_ARTIST_NAME = "artist_name";
+    private static final String ARGS_TABLET_PANE = "is_tablet_pane";
 
     // Views
     private ListView trackListView;
     private TrackListAdapter mTrackAdapter;
 
+    // Player Fragment
+    private PlayerFragment player;
+
+    private String artistName;
+
+    private boolean isTabletPane;
+
     public TrackFragment() {
     }
 
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    public static TrackFragment newInstance(boolean isTablet) {
+        // Add Args
+        Bundle args = new Bundle();
+        args.putBoolean(ARGS_TABLET_PANE, isTablet);
 
-        // Set Activity Sub Title
-        ((AppCompatActivity) getActivity()).getSupportActionBar().setSubtitle(
-                getActivity().getIntent().getStringExtra(getString(R.string.intent_extra_artist_name))
-        );
+        TrackFragment fragment = new TrackFragment();
+        fragment.setArguments(args);
+
+        return fragment;
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        // Get Arguments
+        if (getArguments() != null) {
+            isTabletPane = getArguments().getBoolean(ARGS_TABLET_PANE);
+            player = (PlayerFragment) getActivity().getSupportFragmentManager().findFragmentByTag(getString(R.string.tag_player_fragment));
+        }
+
         // Inflate Views
         View rootView = inflater.inflate(R.layout.fragment_track, container, false);
         trackListView = (ListView) rootView.findViewById(R.id.list_track);
@@ -63,27 +75,38 @@ public class TrackFragment extends Fragment {
                     .getParcelableArray(getString(R.string.args_track_list));
             mTrackAdapter = new TrackListAdapter(dataSet, getActivity());
             trackListView.setAdapter(mTrackAdapter);
+
+            artistName = savedInstanceState.getString(getString(R.string.args_artist_name));
         } else {
+            Intent intent = getActivity().getIntent();
             // Get artist Id
-            if (getActivity().getIntent() != null) {
-                String artistID = getActivity().getIntent().getStringExtra(getString(R.string.intent_extra_spotify_id));
+            if (intent != null) {
+                artistName = intent.getStringExtra(getString(R.string.intent_extra_artist_name));
+                // Get Ids
+                String artistID = intent.getStringExtra(getString(R.string.intent_extra_spotify_id));
                 fetchTopTracks(artistID);
             }
         }
+
+        // Set subtitle
+        ((AppCompatActivity) getActivity()).getSupportActionBar().setSubtitle(artistName);
 
         // @todo: Set On Item Click Listener
         trackListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                // Check if adapter exist
+                if (!isTabletPane) {
                     // Build Intent
                     Intent intent = new Intent(getActivity(), PlayerActivity.class);
                     // Put current track position
                     intent.putExtra(getString(R.string.intent_extra_current_track_position), position);
-                // Put playlist
-                intent.putExtra(getString(R.string.intent_extra_playlist), mTrackAdapter.getDataSet());
+                    // Put playlist
+                    intent.putExtra(getString(R.string.intent_extra_playlist), mTrackAdapter.getDataSet());
                     // Start Activity
                     startActivity(intent);
+                } else {
+                    player.setPlaylistPosition(position);
+                }
             }
         });
 
@@ -96,6 +119,7 @@ public class TrackFragment extends Fragment {
 
         // Get items
         outState.putParcelableArray(getString(R.string.args_track_list), mTrackAdapter.getDataSet());
+        outState.putString(getString(R.string.args_artist_name), artistName);
     }
 
     private void fetchTopTracks(String artistID) {
@@ -124,6 +148,12 @@ public class TrackFragment extends Fragment {
                         @Override
                         public void run() {
                             trackListView.setAdapter(mTrackAdapter);
+
+                            // If tablet, send to player
+                            if (isTabletPane) {
+                                player.setPlaylist(mTrackAdapter.getDataSet());
+                                player.setPlaylistPosition(0);
+                            }
                         }
                     });
                 } else {

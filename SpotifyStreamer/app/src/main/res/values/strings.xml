@@ -18,4 +18,8 @@
     <string name="args_track_list">track_list</string>
     <string name="intent_extra_artist_name">artist_name</string>
     <string name="intent_extra_spotify_id">spotify_id</string>
+    <string name="tag_track_fragment">TrackFragment</string>
+    <string name="tag_player_fragment">PlayerFragment</string>
+    <string name="args_artist_name">artist_name</string>
+    <string name="args_playlist_position">playlist_position</string>
 </resources>

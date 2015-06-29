@@ -54,8 +54,11 @@ public class MainFragment extends Fragment {
         if (savedInstanceState != null) {
             // Load last state
             ArtistItem[] artistDataSet = (ArtistItem[]) savedInstanceState.getParcelableArray(BUNDLE_ARTIST_LIST);
-            artistAdapter = new ArtistListAdapter(artistDataSet, getActivity());
-            artistListView.setAdapter(artistAdapter);
+
+            if (artistDataSet != null) {
+                artistAdapter = new ArtistListAdapter(artistDataSet, getActivity());
+                artistListView.setAdapter(artistAdapter);
+            }
 
             artistSearchInput.setText(savedInstanceState.getString(BUNDLE_LAST_SEARCH));
         }

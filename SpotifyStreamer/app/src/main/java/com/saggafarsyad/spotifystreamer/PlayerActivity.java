@@ -16,7 +16,7 @@ public class PlayerActivity extends ActionBarActivity {
 
         if (savedInstanceState == null) {
             FragmentManager fm = getSupportFragmentManager();
-            fm.beginTransaction().add(android.R.id.content, new PlayerFragment())
+            fm.beginTransaction().add(android.R.id.content, PlayerFragment.newInstance(false))
                     .commit();
         }
     }

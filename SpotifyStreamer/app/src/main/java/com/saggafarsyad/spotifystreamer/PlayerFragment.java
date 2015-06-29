@@ -27,14 +27,17 @@ import java.io.IOException;
  */
 public class PlayerFragment extends DialogFragment implements MediaPlayer.OnPreparedListener, MediaPlayer.OnCompletionListener, SeekBar.OnSeekBarChangeListener {
 
+    private static final String ARGS_TABLET_PANE = "tablet_pane";
     // Playback Handler
     final Handler playbackHandler = new Handler();
     private final String LOG_TAG = "PlayerFragment";
     // Track Playlist
     private TrackItem mPlaylist[];
-    private int mCurrentPosition;
+    private int mPlaylistPosition;
     // Media Player
     private MediaPlayer mMediaPlayer;
+    // Tablet
+    private boolean isTabletPane;
     // Views
     private TextView artistNameTextView;
     private TextView albumNameTextView;
@@ -60,9 +63,36 @@ public class PlayerFragment extends DialogFragment implements MediaPlayer.OnPrep
     public PlayerFragment() {
     }
 
+    public static PlayerFragment newInstance(boolean isTabletPane) {
+        PlayerFragment fragment = new PlayerFragment();
+
+        // Add Arguments
+        Bundle args = new Bundle();
+        args.putBoolean(ARGS_TABLET_PANE, isTabletPane);
+
+        fragment.setArguments(args);
+
+        return fragment;
+    }
+
+    public void setPlaylist(TrackItem[] mPlaylist) {
+        this.mPlaylist = mPlaylist;
+    }
+
+    public void setPlaylistPosition(int mCurrentPosition) {
+        this.mPlaylistPosition = mCurrentPosition;
+
+        fetchTrack();
+    }
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        // Get Arguments
+        if (getArguments() != null) {
+            isTabletPane = getArguments().getBoolean(ARGS_TABLET_PANE);
+        }
+
         // Inflate Layout
         View rootView = inflater.inflate(R.layout.fragment_player, container, false);
         artistNameTextView = (TextView) rootView.findViewById(R.id.artist_name);
@@ -76,16 +106,19 @@ public class PlayerFragment extends DialogFragment implements MediaPlayer.OnPrep
         ImageButton nextButton = (ImageButton) rootView.findViewById(R.id.next);
 
         if (savedInstanceState == null) {
-            // Get Intent
-            Intent intent = getActivity().getIntent();
-            // Add Track list to play list
-            Parcelable tmp[] = intent.getParcelableArrayExtra(getString(R.string.intent_extra_playlist));
-            mPlaylist = new TrackItem[tmp.length];
-            System.arraycopy(tmp, 0, mPlaylist, 0, tmp.length);
-            // Get Position
-            mCurrentPosition = intent.getIntExtra(getString(R.string.intent_extra_current_track_position), 0);
+            if (!isTabletPane) {
+                // Get Intent
+                Intent intent = getActivity().getIntent();
+                // Add Track list to play list
+                Parcelable tmp[] = intent.getParcelableArrayExtra(getString(R.string.intent_extra_playlist));
+                mPlaylist = new TrackItem[tmp.length];
+                System.arraycopy(tmp, 0, mPlaylist, 0, tmp.length);
+                // Get Position
+                mPlaylistPosition = intent.getIntExtra(getString(R.string.intent_extra_current_track_position), 0);
+            }
         } else {
             // Get from savedInstance
+            mPlaylistPosition = savedInstanceState.getInt(getString(R.string.args_playlist_position), 0);
             mPlaylist = (TrackItem[]) savedInstanceState
                     .getParcelableArray(getString(R.string.args_track_list));
         }
@@ -107,13 +140,13 @@ public class PlayerFragment extends DialogFragment implements MediaPlayer.OnPrep
         prevButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (mCurrentPosition == 0) {
+                if (mPlaylistPosition == 0) {
                     // This is the first track,
                     // Select the last track
-                    mCurrentPosition = mPlaylist.length - 1;
+                    mPlaylistPosition = mPlaylist.length - 1;
                 } else {
                     // Select previous track
-                    mCurrentPosition--;
+                    mPlaylistPosition--;
                 }
 
                 fetchTrack();
@@ -123,13 +156,13 @@ public class PlayerFragment extends DialogFragment implements MediaPlayer.OnPrep
         nextButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (mCurrentPosition == mPlaylist.length - 1) {
+                if (mPlaylistPosition == mPlaylist.length - 1) {
                     // This is the last track
                     // Select the first track
-                    mCurrentPosition = 0;
+                    mPlaylistPosition = 0;
                 } else {
                     // Select next track
-                    mCurrentPosition++;
+                    mPlaylistPosition++;
                 }
                 // Start fetching track
                 fetchTrack();
@@ -142,7 +175,7 @@ public class PlayerFragment extends DialogFragment implements MediaPlayer.OnPrep
     @Override
     public void onSaveInstanceState(Bundle outState) {
         outState.putParcelableArray(getString(R.string.args_track_list), mPlaylist);
-
+        outState.putInt(getString(R.string.args_playlist_position), mPlaylistPosition);
         super.onSaveInstanceState(outState);
     }
 
@@ -155,7 +188,8 @@ public class PlayerFragment extends DialogFragment implements MediaPlayer.OnPrep
         mMediaPlayer.setOnCompletionListener(this);
 
         // Fetch track
-        fetchTrack();
+        if (!isTabletPane)
+            fetchTrack();
     }
 
     @Override
@@ -193,7 +227,7 @@ public class PlayerFragment extends DialogFragment implements MediaPlayer.OnPrep
         mMediaPlayer.reset();
         mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
 
-        TrackItem mCurrentTrack = mPlaylist[mCurrentPosition];
+        TrackItem mCurrentTrack = mPlaylist[mPlaylistPosition];
 
         try {
             mMediaPlayer.setDataSource(mCurrentTrack.previewUrl);
@@ -266,5 +300,7 @@ public class PlayerFragment extends DialogFragment implements MediaPlayer.OnPrep
     public void onStopTrackingTouch(SeekBar seekBar) {
         // Do nothing
     }
+
+
 }
 

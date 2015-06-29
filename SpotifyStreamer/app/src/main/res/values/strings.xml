@@ -22,4 +22,5 @@
     <string name="args_artist_name">artist_name</string>
     <string name="args_playlist_position">playlist_position</string>
     <string name="tag_main_fragment">main_fragment</string>
+    <string name="action_share">Share</string>
 </resources>

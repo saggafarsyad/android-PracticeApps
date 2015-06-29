@@ -3,12 +3,18 @@ package com.saggafarsyad.spotifystreamer;
 import android.content.Intent;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Parcelable;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.content.res.ResourcesCompat;
+import android.support.v4.view.MenuItemCompat;
+import android.support.v7.widget.ShareActionProvider;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
@@ -71,6 +77,8 @@ public class PlayerFragment extends DialogFragment implements MediaPlayer.OnPrep
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        setHasOptionsMenu(true);
+
         // Inflate Layout
         View rootView = inflater.inflate(R.layout.fragment_player, container, false);
         artistNameTextView = (TextView) rootView.findViewById(R.id.artist_name);
@@ -278,6 +286,36 @@ public class PlayerFragment extends DialogFragment implements MediaPlayer.OnPrep
         // Do nothing
     }
 
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.menu_player, menu);
 
+        MenuItem menuItem = menu.findItem(R.id.action_share);
+
+        ShareActionProvider mShareProvider = (ShareActionProvider) MenuItemCompat.getActionProvider(menuItem);
+
+        if (mPlaylist[mPlaylistPosition] != null)
+            mShareProvider.setShareIntent(buildShareIntent());
+    }
+
+    private Intent buildShareIntent() {
+        // Build share text
+        TrackItem track = mPlaylist[mPlaylistPosition];
+
+        String strShare = "Now Playing: " + track.name + " by " + track.artistName + " #SpotifyStreamer";
+
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            shareIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
+        } else {
+            shareIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_DOCUMENT);
+        }
+
+        shareIntent.setType("text/plain");
+        shareIntent.putExtra(Intent.EXTRA_TEXT, strShare);
+
+        return shareIntent;
+    }
 }
 

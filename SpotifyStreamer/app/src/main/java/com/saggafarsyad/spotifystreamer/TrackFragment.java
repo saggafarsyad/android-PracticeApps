@@ -29,18 +29,18 @@ import retrofit.client.Response;
  * A placeholder fragment containing a simple view.
  */
 public class TrackFragment extends Fragment {
-    private static final String ARGS_TABLET_PANE = "is_tablet_pane";
+    private static final String ARGS_TABLET_MODE = "tablet_mode";
 
     // Views
     private ListView trackListView;
     private TrackListAdapter mTrackAdapter;
 
     // Player Fragment
-    private PlayerFragment player;
-
+//    private PlayerFragment player;
+    // MainFragment
     private String artistName;
 
-    private boolean isTabletPane;
+    private boolean isTabletMode;
 
     public TrackFragment() {
     }
@@ -48,7 +48,7 @@ public class TrackFragment extends Fragment {
     public static TrackFragment newInstance(boolean isTablet) {
         // Add Args
         Bundle args = new Bundle();
-        args.putBoolean(ARGS_TABLET_PANE, isTablet);
+        args.putBoolean(ARGS_TABLET_MODE, isTablet);
 
         TrackFragment fragment = new TrackFragment();
         fragment.setArguments(args);
@@ -59,12 +59,6 @@ public class TrackFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Get Arguments
-        if (getArguments() != null) {
-            isTabletPane = getArguments().getBoolean(ARGS_TABLET_PANE);
-            player = (PlayerFragment) getActivity().getSupportFragmentManager().findFragmentByTag(getString(R.string.tag_player_fragment));
-        }
-
         // Inflate Views
         View rootView = inflater.inflate(R.layout.fragment_track, container, false);
         trackListView = (ListView) rootView.findViewById(R.id.list_track);
@@ -78,39 +72,42 @@ public class TrackFragment extends Fragment {
 
             artistName = savedInstanceState.getString(getString(R.string.args_artist_name));
         } else {
-            Intent intent = getActivity().getIntent();
-            // Get artist Id
-            if (intent != null) {
+            // Get Arguments
+            isTabletMode = getArguments().getBoolean(ARGS_TABLET_MODE);
+
+            if (!isTabletMode) {
+                Intent intent = getActivity().getIntent();
+                // Get artist Id
                 artistName = intent.getStringExtra(getString(R.string.intent_extra_artist_name));
                 // Get Ids
                 String artistID = intent.getStringExtra(getString(R.string.intent_extra_spotify_id));
+                // Set subtitle
+                ((AppCompatActivity) getActivity()).getSupportActionBar().setSubtitle(artistName);
+                // Fetch Tracks
                 fetchTopTracks(artistID);
             }
         }
-
-        // Set subtitle
-        ((AppCompatActivity) getActivity()).getSupportActionBar().setSubtitle(artistName);
 
         // @todo: Set On Item Click Listener
         trackListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                if (!isTabletPane) {
-                    // Build Intent
-                    Intent intent = new Intent(getActivity(), PlayerActivity.class);
-                    // Put current track position
-                    intent.putExtra(getString(R.string.intent_extra_current_track_position), position);
-                    // Put playlist
-                    intent.putExtra(getString(R.string.intent_extra_playlist), mTrackAdapter.getDataSet());
-                    // Start Activity
-                    startActivity(intent);
-                } else {
-                    player.setPlaylistPosition(position);
-                }
+                // Build Intent
+                Intent intent = new Intent(getActivity(), PlayerActivity.class);
+                // Put current track position
+                intent.putExtra(getString(R.string.intent_extra_current_track_position), position);
+                // Put playlist
+                intent.putExtra(getString(R.string.intent_extra_playlist), mTrackAdapter.getDataSet());
+                // Start Activity
+                startActivity(intent);
             }
         });
 
         return rootView;
+    }
+
+    public void setArtistTopTracks(String spotifyId) {
+        fetchTopTracks(spotifyId);
     }
 
     @Override
@@ -138,21 +135,19 @@ public class TrackFragment extends Fragment {
         // Fetch Top 10 tracks
         service.getArtistTopTrack(artistID, param, new Callback<Tracks>() {
             @Override
-            public void success(Tracks tracks, Response response) {
+            public void success(final Tracks tracks, Response response) {
                 if (!tracks.tracks.isEmpty()) {
-                    // Build adapter
-                    mTrackAdapter = new TrackListAdapter(tracks.tracks, getActivity());
-
                     // Set adapter to track list view
                     mainHandler.post(new Runnable() {
                         @Override
                         public void run() {
-                            trackListView.setAdapter(mTrackAdapter);
-
-                            // If tablet, send to player
-                            if (isTabletPane) {
-                                player.setPlaylist(mTrackAdapter.getDataSet());
-                                player.setPlaylistPosition(0);
+                            if (mTrackAdapter == null) {
+                                // Build adapter
+                                mTrackAdapter = new TrackListAdapter(tracks.tracks, getActivity());
+                                trackListView.setAdapter(mTrackAdapter);
+                            } else {
+                                mTrackAdapter.updateDataSet(tracks.tracks);
+                                mTrackAdapter.notifyDataSetChanged();
                             }
                         }
                     });
@@ -161,6 +156,11 @@ public class TrackFragment extends Fragment {
                         @Override
                         public void run() {
                             Toast.makeText(getActivity(), R.string.track_not_found, Toast.LENGTH_SHORT).show();
+
+                            if (mTrackAdapter != null) {
+                                mTrackAdapter.updateDataSet(new TrackItem[0]);
+                                mTrackAdapter.notifyDataSetChanged();
+                            }
                         }
                     });
                 }

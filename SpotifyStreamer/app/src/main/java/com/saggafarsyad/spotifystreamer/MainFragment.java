@@ -31,15 +31,28 @@ import retrofit.client.Response;
 public class MainFragment extends Fragment {
 
     private static final String LOG_TAG = "MainFragment";
-
+    private static final String ARGS_TABLET_MODE = "tablet_mode";
     private final String BUNDLE_ARTIST_LIST = "artists";
     private final String BUNDLE_LAST_SEARCH = "last_search";
-
+    private boolean isTabletMode;
     private EditText artistSearchInput;
     private ListView artistListView;
     private ArtistListAdapter artistAdapter;
 
+    private TrackFragment mTrackFragment;
+
     public MainFragment() {
+    }
+
+    public static MainFragment newInstance(boolean isTabletMode) {
+        // Set arguments
+        Bundle b = new Bundle();
+        b.putBoolean(ARGS_TABLET_MODE, isTabletMode);
+        // Init fragment
+        MainFragment fragment = new MainFragment();
+        fragment.setArguments(b);
+
+        return fragment;
     }
 
     @Override
@@ -52,6 +65,8 @@ public class MainFragment extends Fragment {
 
         // If ther is saved isntance
         if (savedInstanceState != null) {
+            isTabletMode = savedInstanceState.getBoolean(ARGS_TABLET_MODE);
+
             // Load last state
             ArtistItem[] artistDataSet = (ArtistItem[]) savedInstanceState.getParcelableArray(BUNDLE_ARTIST_LIST);
 
@@ -61,6 +76,12 @@ public class MainFragment extends Fragment {
             }
 
             artistSearchInput.setText(savedInstanceState.getString(BUNDLE_LAST_SEARCH));
+        } else {
+            isTabletMode = getArguments().getBoolean(ARGS_TABLET_MODE);
+        }
+
+        if (isTabletMode) {
+            mTrackFragment = (TrackFragment) getFragmentManager().findFragmentByTag(getString(R.string.tag_track_fragment));
         }
 
         artistSearchInput.setOnEditorActionListener(new TextView.OnEditorActionListener() {
@@ -86,15 +107,20 @@ public class MainFragment extends Fragment {
                 // Get Artist
                 ArtistItem artist = (ArtistItem) artistAdapter.getItem(position);
 
-                // Build intent
-                Intent intent = new Intent(getActivity(), TrackActivity.class);
+                if (isTabletMode) {
+                    // @todo TrackFragment set Artist name and spotify id
+                    mTrackFragment.setArtistTopTracks(artist.spotifyId);
+                } else {
+                    // Build intent
+                    Intent intent = new Intent(getActivity(), TrackActivity.class);
 
-                // Put Spotify Artist ID and Name
-                intent.putExtra(getString(R.string.intent_extra_spotify_id), artist.spotifyId);
-                intent.putExtra(getString(R.string.intent_extra_artist_name), artist.name);
+                    // Put Spotify Artist ID and Name
+                    intent.putExtra(getString(R.string.intent_extra_spotify_id), artist.spotifyId);
+                    intent.putExtra(getString(R.string.intent_extra_artist_name), artist.name);
 
-                // Start Activity
-                startActivity(intent);
+                    // Start Activity
+                    startActivity(intent);
+                }
             }
         });
 
@@ -110,6 +136,8 @@ public class MainFragment extends Fragment {
             outState.putParcelableArray(BUNDLE_ARTIST_LIST, artistAdapter.getDataSet());
             outState.putString(BUNDLE_LAST_SEARCH, inputSearch);
         }
+
+        outState.putBoolean(ARGS_TABLET_MODE, isTabletMode);
 
         super.onSaveInstanceState(outState);
     }
@@ -164,5 +192,4 @@ public class MainFragment extends Fragment {
             }
         });
     }
-
 }

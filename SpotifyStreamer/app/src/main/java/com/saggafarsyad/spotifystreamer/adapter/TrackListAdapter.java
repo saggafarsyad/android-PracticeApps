@@ -29,41 +29,7 @@ public class TrackListAdapter extends BaseAdapter {
     }
 
     public TrackListAdapter(List<Track> input, Context context) {
-        // Convert Track to TrackItem
-        // Get size
-        int size = input.size();
-
-        TrackItem trackDataset[] = new TrackItem[size];
-
-        for (int i = 0; i < size; i++) {
-            Track track = input.get(i);
-
-            int artistCount = track.artists.size();
-            String artistName;
-
-            if (artistCount > 0) {
-                int j = 0;
-                artistName = track.artists.get(j).name;
-                j++;
-                while (j < track.artists.size()) {
-                    artistName += ", " + track.artists.get(j).name;
-                    j++;
-                }
-            } else {
-                artistName = "N/A";
-            }
-
-            // Add track to dataset
-            trackDataset[i] = new TrackItem(
-                    track.id,
-                    track.name,
-                    artistName,
-                    track.album.name,
-                    track.album.images.get(0).url,
-                    track.preview_url
-            );
-        }
-        this.mDataSet = trackDataset;
+        updateDataSet(input);
         this.mContext = context;
     }
 
@@ -119,6 +85,48 @@ public class TrackListAdapter extends BaseAdapter {
         holder.albumkNameTextView.setText(item.albumName);
 
         return convertView;
+    }
+
+    public void updateDataSet(TrackItem[] trackItems) {
+        this.mDataSet = trackItems;
+    }
+
+    public void updateDataSet(List<Track> input) {
+        // Convert Track to TrackItem
+        // Get size
+        int size = input.size();
+
+        TrackItem trackDataset[] = new TrackItem[size];
+
+        for (int i = 0; i < size; i++) {
+            Track track = input.get(i);
+
+            int artistCount = track.artists.size();
+            String artistName;
+
+            if (artistCount > 0) {
+                int j = 0;
+                artistName = track.artists.get(j).name;
+                j++;
+                while (j < track.artists.size()) {
+                    artistName += ", " + track.artists.get(j).name;
+                    j++;
+                }
+            } else {
+                artistName = "N/A";
+            }
+
+            // Add track to dataset
+            trackDataset[i] = new TrackItem(
+                    track.id,
+                    track.name,
+                    artistName,
+                    track.album.name,
+                    track.album.images.get(0).url,
+                    track.preview_url
+            );
+        }
+        this.mDataSet = trackDataset;
     }
 
     private static class ViewHolder {

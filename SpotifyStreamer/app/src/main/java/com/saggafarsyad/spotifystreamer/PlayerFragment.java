@@ -27,17 +27,13 @@ import java.io.IOException;
  */
 public class PlayerFragment extends DialogFragment implements MediaPlayer.OnPreparedListener, MediaPlayer.OnCompletionListener, SeekBar.OnSeekBarChangeListener {
 
-    private static final String ARGS_TABLET_PANE = "tablet_pane";
     // Playback Handler
     final Handler playbackHandler = new Handler();
-    private final String LOG_TAG = "PlayerFragment";
     // Track Playlist
     private TrackItem mPlaylist[];
     private int mPlaylistPosition;
     // Media Player
     private MediaPlayer mMediaPlayer;
-    // Tablet
-    private boolean isTabletPane;
     // Views
     private TextView artistNameTextView;
     private TextView albumNameTextView;
@@ -63,36 +59,18 @@ public class PlayerFragment extends DialogFragment implements MediaPlayer.OnPrep
     public PlayerFragment() {
     }
 
-    public static PlayerFragment newInstance(boolean isTabletPane) {
-        PlayerFragment fragment = new PlayerFragment();
-
-        // Add Arguments
-        Bundle args = new Bundle();
-        args.putBoolean(ARGS_TABLET_PANE, isTabletPane);
-
-        fragment.setArguments(args);
-
-        return fragment;
-    }
-
-    public void setPlaylist(TrackItem[] mPlaylist) {
-        this.mPlaylist = mPlaylist;
-    }
-
     public void setPlaylistPosition(int mCurrentPosition) {
         this.mPlaylistPosition = mCurrentPosition;
-
         fetchTrack();
+    }
+
+    public TrackItem[] getPlaylist() {
+        return mPlaylist;
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Get Arguments
-        if (getArguments() != null) {
-            isTabletPane = getArguments().getBoolean(ARGS_TABLET_PANE);
-        }
-
         // Inflate Layout
         View rootView = inflater.inflate(R.layout.fragment_player, container, false);
         artistNameTextView = (TextView) rootView.findViewById(R.id.artist_name);
@@ -105,23 +83,23 @@ public class PlayerFragment extends DialogFragment implements MediaPlayer.OnPrep
         ImageButton prevButton = (ImageButton) rootView.findViewById(R.id.prev);
         ImageButton nextButton = (ImageButton) rootView.findViewById(R.id.next);
 
-        if (savedInstanceState == null) {
-            if (!isTabletPane) {
-                // Get Intent
-                Intent intent = getActivity().getIntent();
-                // Add Track list to play list
-                Parcelable tmp[] = intent.getParcelableArrayExtra(getString(R.string.intent_extra_playlist));
-                mPlaylist = new TrackItem[tmp.length];
-                System.arraycopy(tmp, 0, mPlaylist, 0, tmp.length);
-                // Get Position
-                mPlaylistPosition = intent.getIntExtra(getString(R.string.intent_extra_current_track_position), 0);
-            }
-        } else {
+        if (savedInstanceState != null) {
             // Get from savedInstance
             mPlaylistPosition = savedInstanceState.getInt(getString(R.string.args_playlist_position), 0);
             mPlaylist = (TrackItem[]) savedInstanceState
                     .getParcelableArray(getString(R.string.args_track_list));
+        } else {
+            // Get Intent
+            Intent intent = getActivity().getIntent();
+            // Add Track list to play list
+            Parcelable tmp[] = intent.getParcelableArrayExtra(getString(R.string.intent_extra_playlist));
+            mPlaylist = new TrackItem[tmp.length];
+            System.arraycopy(tmp, 0, mPlaylist, 0, tmp.length);
+            // Get Position
+            mPlaylistPosition = intent.getIntExtra(getString(R.string.intent_extra_current_track_position), 0);
         }
+
+        ((PlayerActivity) getActivity()).setPlaylistAdapter(mPlaylist);
 
         playbackSeekBar.setOnSeekBarChangeListener(this);
 
@@ -188,8 +166,7 @@ public class PlayerFragment extends DialogFragment implements MediaPlayer.OnPrep
         mMediaPlayer.setOnCompletionListener(this);
 
         // Fetch track
-        if (!isTabletPane)
-            fetchTrack();
+        fetchTrack();
     }
 
     @Override

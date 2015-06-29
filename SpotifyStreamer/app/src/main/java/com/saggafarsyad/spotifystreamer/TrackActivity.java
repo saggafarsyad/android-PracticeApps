@@ -1,7 +1,6 @@
 package com.saggafarsyad.spotifystreamer;
 
 import android.os.Bundle;
-import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -13,18 +12,12 @@ public class TrackActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_track);
 
-        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-
-        if (findViewById(R.id.player_fragment) != null) {
-            transaction.replace(R.id.track_fragment, TrackFragment.newInstance(true), getString(R.string.tag_track_fragment));
-            transaction.replace(R.id.player_fragment, PlayerFragment.newInstance(true), getString(R.string.tag_player_fragment));
-        } else {
-            transaction.replace(R.id.track_fragment, TrackFragment.newInstance(false));
+        if (savedInstanceState == null) {
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.fragment, TrackFragment.newInstance(false))
+                    .commit();
         }
-
-        transaction.commit();
     }
-
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

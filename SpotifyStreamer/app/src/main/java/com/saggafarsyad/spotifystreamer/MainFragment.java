@@ -87,8 +87,8 @@ public class MainFragment extends Fragment {
                 Intent intent = new Intent(getActivity(), TrackActivity.class);
 
                 // Put Spotify Artist ID and Name
-                intent.putExtra(TrackFragment.EXTRA_ARTIST_ID, artist.spotifyId);
-                intent.putExtra(TrackFragment.EXTRA_ARTIST_NAME, artist.name);
+                intent.putExtra(getString(R.string.intent_extra_spotify_id), artist.spotifyId);
+                intent.putExtra(getString(R.string.intent_extra_artist_name), artist.name);
 
                 // Start Activity
                 startActivity(intent);

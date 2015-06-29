@@ -3,8 +3,6 @@ package com.saggafarsyad.spotifystreamer.model;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-import kaaes.spotify.webapi.android.models.Track;
-
 /**
  * Created by Muhammad on 25/06/2015.
  */
@@ -20,31 +18,30 @@ public class TrackItem implements Parcelable {
     };
     public String spotifyId;
     public String name;
-    public String albumArtworkUrl;
+    public String artistName;
     public String albumName;
+    public String albumArtworkUrl;
+    public String previewUrl;
 
-    public TrackItem() {
+    public TrackItem(String spotifyId, String name, String artistName, String albumName, String albumArtworkUrl, String previewUrl) {
+        this.spotifyId = spotifyId;
+        this.name = name;
+        this.artistName = artistName;
+        this.albumName = albumName;
+        this.albumArtworkUrl = albumArtworkUrl;
+        this.previewUrl = previewUrl;
     }
 
-    public TrackItem(Track track) {
-        this.spotifyId = track.id;
-        this.name = track.name;
-        this.albumArtworkUrl = track.album.images.get(0).url;
-        this.albumName = track.album.name;
+    public TrackItem() {
     }
 
     protected TrackItem(Parcel in) {
         this.spotifyId = in.readString();
         this.name = in.readString();
-        this.albumArtworkUrl = in.readString();
+        this.artistName = in.readString();
         this.albumName = in.readString();
-    }
-
-    public TrackItem(String spotifyId, String name, String albumName, String albumArtworkUrl) {
-        this.spotifyId = spotifyId;
-        this.name = name;
-        this.albumArtworkUrl = albumArtworkUrl;
-        this.albumName = albumName;
+        this.albumArtworkUrl = in.readString();
+        this.previewUrl = in.readString();
     }
 
     @Override
@@ -56,7 +53,9 @@ public class TrackItem implements Parcelable {
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeString(this.spotifyId);
         dest.writeString(this.name);
-        dest.writeString(this.albumArtworkUrl);
+        dest.writeString(this.artistName);
         dest.writeString(this.albumName);
+        dest.writeString(this.albumArtworkUrl);
+        dest.writeString(this.previewUrl);
     }
 }

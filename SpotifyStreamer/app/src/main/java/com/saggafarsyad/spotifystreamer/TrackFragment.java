@@ -30,12 +30,12 @@ import retrofit.client.Response;
  */
 public class TrackFragment extends Fragment {
     // Extra const
-    public static final String EXTRA_ARTIST_ID = "artist_id";
-    public static final String EXTRA_ARTIST_NAME = "artist_name";
+//    public static final String EXTRA_ARTIST_ID = "artist_id";
+//    public static final String EXTRA_ARTIST_NAME = "artist_name";
 
-    private final String ARGS_TRACK_LIST = "track_list";
     // Views
     private ListView trackListView;
+    private TrackListAdapter mTrackAdapter;
 
     public TrackFragment() {
     }
@@ -46,7 +46,7 @@ public class TrackFragment extends Fragment {
 
         // Set Activity Sub Title
         ((AppCompatActivity) getActivity()).getSupportActionBar().setSubtitle(
-                getActivity().getIntent().getStringExtra(EXTRA_ARTIST_NAME)
+                getActivity().getIntent().getStringExtra(getString(R.string.intent_extra_artist_name))
         );
     }
 
@@ -59,12 +59,14 @@ public class TrackFragment extends Fragment {
 
         // Get Top 10 Tracks
         if (savedInstanceState != null) {
-            TrackItem[] dataSet = (TrackItem[]) savedInstanceState.getParcelableArray(ARGS_TRACK_LIST);
-            trackListView.setAdapter(new TrackListAdapter(dataSet, getActivity()));
+            TrackItem[] dataSet = (TrackItem[]) savedInstanceState
+                    .getParcelableArray(getString(R.string.args_track_list));
+            mTrackAdapter = new TrackListAdapter(dataSet, getActivity());
+            trackListView.setAdapter(mTrackAdapter);
         } else {
             // Get artist Id
             if (getActivity().getIntent() != null) {
-                String artistID = getActivity().getIntent().getStringExtra(EXTRA_ARTIST_ID);
+                String artistID = getActivity().getIntent().getStringExtra(getString(R.string.intent_extra_spotify_id));
                 fetchTopTracks(artistID);
             }
         }
@@ -74,24 +76,14 @@ public class TrackFragment extends Fragment {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 // Check if adapter exist
-                if (parent.getAdapter() != null) {
-                    // Get all track id
-                    int trackCount = parent.getAdapter().getCount();
-                    String trackIds[] = new String[trackCount];
-
-                    for (int i = 0; i < trackCount; i++) {
-                        trackIds[i] = ((TrackItem) parent.getAdapter().getItem(i)).spotifyId;
-                    }
-
                     // Build Intent
                     Intent intent = new Intent(getActivity(), PlayerActivity.class);
                     // Put current track position
                     intent.putExtra(getString(R.string.intent_extra_current_track_position), position);
-                    // Put track id list
-                    intent.putExtra(getString(R.string.intent_extra_track_id_list), trackIds);
+                // Put playlist
+                intent.putExtra(getString(R.string.intent_extra_playlist), mTrackAdapter.getDataSet());
                     // Start Activity
                     startActivity(intent);
-                }
             }
         });
 
@@ -103,8 +95,7 @@ public class TrackFragment extends Fragment {
         super.onSaveInstanceState(outState);
 
         // Get items
-        TrackItem[] dataSet = ((TrackListAdapter) trackListView.getAdapter()).getDataSet();
-        outState.putParcelableArray(ARGS_TRACK_LIST, dataSet);
+        outState.putParcelableArray(getString(R.string.args_track_list), mTrackAdapter.getDataSet());
     }
 
     private void fetchTopTracks(String artistID) {
@@ -115,6 +106,7 @@ public class TrackFragment extends Fragment {
         // Get UI Thread
         final Handler mainHandler = new Handler(getActivity().getMainLooper());
 
+        // @todo Build Settings to change country
         // Build Parameters
         HashMap<String, Object> param = new HashMap<>();
         param.put("country", "US");
@@ -125,13 +117,13 @@ public class TrackFragment extends Fragment {
             public void success(Tracks tracks, Response response) {
                 if (!tracks.tracks.isEmpty()) {
                     // Build adapter
-                    final TrackListAdapter adapter = new TrackListAdapter(tracks.tracks, getActivity());
+                    mTrackAdapter = new TrackListAdapter(tracks.tracks, getActivity());
 
                     // Set adapter to track list view
                     mainHandler.post(new Runnable() {
                         @Override
                         public void run() {
-                            trackListView.setAdapter(adapter);
+                            trackListView.setAdapter(mTrackAdapter);
                         }
                     });
                 } else {

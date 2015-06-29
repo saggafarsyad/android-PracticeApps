@@ -5,6 +5,7 @@ import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Parcelable;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.content.res.ResourcesCompat;
 import android.view.LayoutInflater;
@@ -14,33 +15,24 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
+import com.saggafarsyad.spotifystreamer.model.TrackItem;
 import com.squareup.picasso.Picasso;
 
 import java.io.IOException;
-import java.util.HashMap;
-
-import kaaes.spotify.webapi.android.SpotifyApi;
-import kaaes.spotify.webapi.android.SpotifyService;
-import kaaes.spotify.webapi.android.models.Track;
-import retrofit.Callback;
-import retrofit.RetrofitError;
-import retrofit.client.Response;
 
 
 /**
  * A placeholder fragment containing a simple view.
  */
-public class PlayerFragment extends DialogFragment implements MediaPlayer.OnPreparedListener, MediaPlayer.OnCompletionListener {
+public class PlayerFragment extends DialogFragment implements MediaPlayer.OnPreparedListener, MediaPlayer.OnCompletionListener, SeekBar.OnSeekBarChangeListener {
 
     // Playback Handler
     final Handler playbackHandler = new Handler();
     private final String LOG_TAG = "PlayerFragment";
     // Track Playlist
-    private String mPlaylist[];
-    private int mPlaylistPosition;
-    private Track mCurrentTrack;
+    private TrackItem mPlaylist[];
+    private int mCurrentPosition;
     // Media Player
     private MediaPlayer mMediaPlayer;
     // Views
@@ -82,26 +74,24 @@ public class PlayerFragment extends DialogFragment implements MediaPlayer.OnPrep
         playPauseButton = (ImageButton) rootView.findViewById(R.id.play_pause);
         ImageButton prevButton = (ImageButton) rootView.findViewById(R.id.prev);
         ImageButton nextButton = (ImageButton) rootView.findViewById(R.id.next);
-        // Set seek bar on change listener
-        playbackSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                // If user changed the seekbar, set seekTo
-                if (mMediaPlayer != null && fromUser) {
-                    mMediaPlayer.seekTo(progress);
-                }
-            }
 
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-                // Do nothing
-            }
+        if (savedInstanceState == null) {
+            // Get Intent
+            Intent intent = getActivity().getIntent();
+            // Add Track list to play list
+            Parcelable tmp[] = intent.getParcelableArrayExtra(getString(R.string.intent_extra_playlist));
+            mPlaylist = new TrackItem[tmp.length];
+            System.arraycopy(tmp, 0, mPlaylist, 0, tmp.length);
+            // Get Position
+            mCurrentPosition = intent.getIntExtra(getString(R.string.intent_extra_current_track_position), 0);
+        } else {
+            // Get from savedInstance
+            mPlaylist = (TrackItem[]) savedInstanceState
+                    .getParcelableArray(getString(R.string.args_track_list));
+        }
 
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-                // Do nothing
-            }
-        });
+        playbackSeekBar.setOnSeekBarChangeListener(this);
+
         // Set Play/Pause Button on click listener
         playPauseButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -117,43 +107,43 @@ public class PlayerFragment extends DialogFragment implements MediaPlayer.OnPrep
         prevButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (mPlaylistPosition == 0) {
+                if (mCurrentPosition == 0) {
                     // This is the first track,
                     // Select the last track
-                    mPlaylistPosition = mPlaylist.length - 1;
+                    mCurrentPosition = mPlaylist.length - 1;
                 } else {
                     // Select previous track
-                    mPlaylistPosition--;
+                    mCurrentPosition--;
                 }
 
-                fetchTrack(mPlaylist[mPlaylistPosition]);
+                fetchTrack();
             }
         });
         // Set next track button on click listener
         nextButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (mPlaylistPosition == mPlaylist.length - 1) {
+                if (mCurrentPosition == mPlaylist.length - 1) {
                     // This is the last track
                     // Select the first track
-                    mPlaylistPosition = 0;
+                    mCurrentPosition = 0;
                 } else {
                     // Select next track
-                    mPlaylistPosition++;
+                    mCurrentPosition++;
                 }
                 // Start fetching track
-                fetchTrack(mPlaylist[mPlaylistPosition]);
+                fetchTrack();
             }
         });
 
-        // Get Intent
-        Intent intent = getActivity().getIntent();
-        // Get Track List from Intent
-        mPlaylist = intent.getStringArrayExtra(getString(R.string.intent_extra_track_id_list));
-        // Get Position
-        mPlaylistPosition = intent.getIntExtra(getString(R.string.intent_extra_current_track_position), 0);
-
         return rootView;
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        outState.putParcelableArray(getString(R.string.args_track_list), mPlaylist);
+
+        super.onSaveInstanceState(outState);
     }
 
     @Override
@@ -165,7 +155,7 @@ public class PlayerFragment extends DialogFragment implements MediaPlayer.OnPrep
         mMediaPlayer.setOnCompletionListener(this);
 
         // Fetch track
-        fetchTrack(mPlaylist[mPlaylistPosition]);
+        fetchTrack();
     }
 
     @Override
@@ -199,62 +189,27 @@ public class PlayerFragment extends DialogFragment implements MediaPlayer.OnPrep
         }
     }
 
-    private void fetchTrack(final String trackId) {
-        // Init Spotify wrapper
-        SpotifyApi api = new SpotifyApi();
-        SpotifyService service = api.getService();
+    private void fetchTrack() {
+        mMediaPlayer.reset();
+        mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
 
-        // Get UI Thread
-        final Handler mainHandler = new Handler(getActivity().getMainLooper());
+        TrackItem mCurrentTrack = mPlaylist[mCurrentPosition];
 
-        // Build Parameters
-        HashMap<String, Object> param = new HashMap<>();
-        param.put("country", "US");
+        try {
+            mMediaPlayer.setDataSource(mCurrentTrack.previewUrl);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        mMediaPlayer.prepareAsync();
 
-        // Fetch track by ID
-        service.getTrack(trackId, param, new Callback<Track>() {
-            @Override
-            public void success(final Track track, Response response) {
-                mCurrentTrack = track;
-
-                mMediaPlayer.reset();
-                mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-
-                try {
-                    mMediaPlayer.setDataSource(mCurrentTrack.preview_url);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                mMediaPlayer.prepareAsync();
-
-                // Update UIs
-                mainHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        playbackSeekBar.setProgress(0);
-                        artistNameTextView.setText(track.artists.get(0).name);
-                        albumNameTextView.setText(track.album.name);
-                        trackNameTextView.setText(track.name);
-                        durationTextView.setText(getDurationString(0));
-                        // @todo Set duration
-                        // Load artwork
-                        Picasso.with(getActivity()).load(track.album.images.get(0).url).into(albumArtworkImageView);
-                        playPauseButton.setImageDrawable(ResourcesCompat.getDrawable(getResources(), R.drawable.ic_av_play_arrow, null));
-                    }
-                });
-            }
-
-            @Override
-            public void failure(RetrofitError error) {
-                // Make Toast
-                mainHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(getActivity(), R.string.error_connection, Toast.LENGTH_SHORT).show();
-                    }
-                });
-            }
-        });
+        playbackSeekBar.setProgress(0);
+        artistNameTextView.setText(mCurrentTrack.artistName);
+        albumNameTextView.setText(mCurrentTrack.albumName);
+        trackNameTextView.setText(mCurrentTrack.name);
+        durationTextView.setText(getDurationString(0));
+        // Load artwork
+        Picasso.with(getActivity()).load(mCurrentTrack.albumArtworkUrl).into(albumArtworkImageView);
+        playPauseButton.setImageDrawable(ResourcesCompat.getDrawable(getResources(), R.drawable.ic_av_play_arrow, null));
     }
 
     @Override
@@ -292,6 +247,24 @@ public class PlayerFragment extends DialogFragment implements MediaPlayer.OnPrep
         }
 
         return minutes + ":" + second;
+    }
+
+    @Override
+    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+        // If user changed the seekbar, set seekTo
+        if (mMediaPlayer != null && fromUser) {
+            mMediaPlayer.seekTo(progress);
+        }
+    }
+
+    @Override
+    public void onStartTrackingTouch(SeekBar seekBar) {
+        // Do nothing
+    }
+
+    @Override
+    public void onStopTrackingTouch(SeekBar seekBar) {
+        // Do nothing
     }
 }
 

@@ -18,6 +18,7 @@ public class ArtistItem implements Parcelable {
             return new ArtistItem[size];
         }
     };
+
     public String spotifyId;
     public String name;
     public String thumbnailUrl;
